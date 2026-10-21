@@ -1,0 +1,8 @@
+[
+  { "id": "score-rookie", "name": "Rookie: bucket score", "order": "desc", "format": "number", "writes": "game" },
+  { "id": "score-high-school", "name": "High School: bucket score", "order": "desc", "format": "number", "writes": "game" },
+  { "id": "score-college", "name": "College: bucket score", "order": "desc", "format": "number", "writes": "game" },
+  { "id": "score-pro", "name": "Pro: bucket score", "order": "desc", "format": "number", "writes": "game" },
+  { "id": "score-all-star", "name": "All-Star: bucket score", "order": "desc", "format": "number", "writes": "game" },
+  { "id": "longest", "name": "Longest hit (ft)", "order": "desc", "format": "number", "writes": "game" }
+]

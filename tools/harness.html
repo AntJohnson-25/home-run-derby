@@ -1,0 +1,38 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home Run Derby: local lobby harness</title>
+<style>
+  body { margin: 0; background: #111; color: #ddd; font: 13px system-ui, sans-serif; }
+  .frames { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: calc(50vh - 2px); gap: 4px; height: 100vh; }
+  iframe { width: 100%; height: 100%; border: 0; background: #000; }
+</style>
+</head>
+<body>
+<!-- TEST ONLY. Serve the project folder (node tools\serve.cjs 8790) and open
+     http://127.0.0.1:8790/tools/harness.html?n=2  (n = 1..4 players; &speed=0..4; &auto = everyone swings by themselves
+     (BC.auto(0)); &drive = this page steps the games, for headless browsers; &steps=N frames per tick).
+     Frame i is player A, B, C or D (A hosts). From the console: frame(0).BC.state(), fkLeave("B"). -->
+<div class="frames" id="frames"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const n = Math.max(1, Math.min(4, +(q.get("n") || 2)));
+const ids = ["A", "B", "C", "D"].slice(0, n);
+const opts = JSON.stringify({ speed: q.get("speed") || "1" });
+for (const id of ids) {
+  const f = document.createElement("iframe");
+  f.src = "/Work/index.html?fake=" + id + "&lobby=" + ids.join(",") + "&opts=" + encodeURIComponent(opts) + "&g=" + (q.get("g") || "low");
+  f.id = "f" + id;
+  document.getElementById("frames").appendChild(f);
+}
+window.frame = (i) => document.querySelectorAll("iframe")[i].contentWindow;
+if (q.has("auto")) setInterval(() => document.querySelectorAll("iframe").forEach((f) => { const w = f.contentWindow; if (w && w.BC && !w.__autoSet) { w.__autoSet = true; w.BC.auto(0.01); } }), 500);
+// &drive: step every game from here (headless browsers barely run requestAnimationFrame in iframes)
+if (q.has("drive")) setInterval(() => {
+  document.querySelectorAll("iframe").forEach((f) => { const w = f.contentWindow; if (w && w.BC) { try { w.BC.pause(true); w.BC.step(+(q.get("steps") || 3), 1 / 20, true); } catch (e) { console.error(f.id + " " + (e.stack || e)); } } });
+}, 50);
+window.fkLeave = (id) => { const f = document.getElementById("f" + id); if (f) f.remove(); const any = document.querySelector("iframe"); if (any) any.contentWindow.fkLeave(id); };
+</script>
+</body>
+</html>
