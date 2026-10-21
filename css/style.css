@@ -1,0 +1,189 @@
+:root {
+  --ink: #fdf8ec;
+  --navy: #13213f;
+  --navy-2: #1d3263;
+  --amber: #ffb000;
+  --chalk: #f4f1e8;
+  --grass: #4c8a3a;
+  --red: #d8323a;
+  --shade: rgba(10, 16, 32, 0.74);
+  --edge: rgba(255, 240, 200, 0.2);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1d3263; color: var(--ink);
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent; touch-action: none; }
+#app, #app canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+.hidden { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+
+/* loading + overlays */
+#loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 35%, #2b4a86, #0d1730); z-index: 30; }
+.ld-title, h1 { font: 900 clamp(36px, 9vw, 66px) Impact, "Arial Black", sans-serif; letter-spacing: 3px; margin: 0;
+  text-shadow: 0 4px 0 #07101f; }
+.ld-title span, h1 span { color: var(--amber); }
+.ld-sub { margin-top: 10px; opacity: 0.85; }
+#title, #results { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px;
+  background: linear-gradient(180deg, rgba(10, 16, 32, 0.05), rgba(10, 16, 32, 0.55)); }
+#title { align-items: flex-end; justify-content: flex-start; }
+.panel { background: linear-gradient(180deg, rgba(29, 50, 99, 0.95), rgba(19, 33, 63, 0.96)); border: 3px solid #07101f; border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 2px var(--edge); padding: 20px 24px; max-width: 520px; width: 100%; text-align: center; }
+#title .panel { max-width: 440px; text-align: left; }
+.kicker { font-size: 12px; letter-spacing: 4px; color: var(--amber); font-weight: 700; }
+.lede { margin: 6px 0 12px; line-height: 1.4; opacity: 0.92; font-size: 15px; }
+.pick { font-size: 11px; letter-spacing: 3px; opacity: 0.75; margin-bottom: 6px; font-weight: 700; }
+#levels { display: grid; grid-template-columns: 1fr; gap: 5px; margin-bottom: 12px; }
+.lv { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; text-align: left; background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.12); border-radius: 8px; padding: 6px 10px; }
+.lv b { font-size: 15px; letter-spacing: 1px; }
+.lv span { grid-column: 1; font-size: 12px; opacity: 0.75; }
+.lv em { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-style: normal; font-size: 12px; color: var(--amber); }
+.lv.on { background: rgba(255, 176, 0, 0.18); border-color: var(--amber); }
+#batters { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+#batters button { background: rgba(255, 255, 255, 0.06); border: 2px solid rgba(255, 255, 255, 0.12); border-radius: 8px;
+  padding: 7px 10px; font-weight: 900; font-size: 14px; letter-spacing: 1px; }
+#batters button.on { background: rgba(255, 176, 0, 0.18); border-color: var(--amber); }
+.controls { font-size: 13px; opacity: 0.9; margin-bottom: 12px; }
+.controls b { color: var(--amber); }
+.big-btn { background: linear-gradient(180deg, #ff4a52, #b8222a); border: 3px solid #5a0c10; border-radius: 10px; padding: 11px 24px;
+  font: 900 20px Impact, "Arial Black", sans-serif; letter-spacing: 2px; color: #fff; text-shadow: 0 2px 0 #5a0c10; box-shadow: 0 4px 0 #5a0c10; width: 100%; }
+.big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #5a0c10; }
+.big-btn.alt { background: linear-gradient(180deg, #ffc640, #d48a00); border-color: #5a3a00; box-shadow: 0 4px 0 #5a3a00; text-shadow: 0 2px 0 #5a3a00; color: #2a1a00; }
+.ghost-btn { display: block; margin: 10px auto 0; background: none; border: none; text-decoration: underline; opacity: 0.85; }
+
+/* HUD */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+#hud button { pointer-events: auto; }
+#board { position: absolute; left: max(12px, env(safe-area-inset-left)); top: max(12px, env(safe-area-inset-top)); width: 236px;
+  background: #0b0c0e; border: 3px solid #2a2d33; border-radius: 10px; padding: 8px 12px; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45); }
+.b-row { display: flex; justify-content: space-between; align-items: baseline; }
+.b-lbl { font-size: 12px; letter-spacing: 3px; color: #8aa0b4; font-weight: 700; }
+#score { font: 700 36px "Courier New", monospace; color: var(--amber); line-height: 1; }
+.b-row.small { font-size: 11px; letter-spacing: 1px; color: #8aa0b4; margin-top: 4px; }
+#best { color: #47e06a; }
+#dots { display: flex; gap: 3px; margin-top: 6px; }
+#dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--chalk); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25); }
+#dots i.used { background: #2a2d33; box-shadow: none; }
+#streak { font-size: 12px; font-weight: 700; color: #ff7a4a; letter-spacing: 2px; margin-top: 4px; min-height: 0; }
+#streak:empty { display: none; }
+#spray-box { position: absolute; right: max(12px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top));
+  background: var(--shade); border: 1px solid var(--edge); border-radius: 10px; padding: 4px; }
+#spray-box canvas { display: block; width: 170px; height: 145px; }
+#mute { position: absolute; right: max(12px, env(safe-area-inset-right)); top: calc(max(12px, env(safe-area-inset-top)) + 166px);
+  background: var(--shade); border: 1px solid var(--edge); border-radius: 8px; width: 34px; height: 34px; }
+#mute.off { opacity: 0.4; text-decoration: line-through; }
+
+/* The result card sits low on the left, clear of the machine, the ball's path and the video board. */
+.call { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: 24%; transform-origin: left bottom; text-align: left; white-space: nowrap;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7); animation: callIn 2.6s forwards; pointer-events: none; }
+.call .big { font: 900 clamp(28px, 4.8vw, 52px) Impact, "Arial Black", sans-serif; letter-spacing: 2px; color: #fff; -webkit-text-stroke: 1px rgba(0, 0, 0, 0.35); }
+.call.hr .big { color: var(--amber); }
+.call.good .big { color: #fff; }
+.call.meh .big, .call.miss .big { color: #d6dde6; font-size: clamp(26px, 5vw, 44px); }
+.call .sub { font-weight: 700; letter-spacing: 2px; font-size: 15px; }
+.call .tm { margin-top: 2px; font-size: 13px; letter-spacing: 3px; color: #9ad8ff; font-weight: 700; }
+.call .pts { margin-top: 4px; font: 700 20px "Courier New", monospace; color: #47e06a; }
+@keyframes callIn { 0% { opacity: 0; transform: translate(0, 12px) scale(0.85); } 8% { opacity: 1; transform: translate(0, 0) scale(1.06); }
+  14% { transform: translate(0, 0) scale(1); } 82% { opacity: 1; } 100% { opacity: 0; } }
+
+#meter { position: absolute; left: 50%; bottom: max(76px, calc(env(safe-area-inset-bottom) + 66px)); transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: 2px; font-weight: 700; opacity: 0.95; }
+.ml { opacity: 0.75; }
+#meter .bar { position: relative; width: 220px; height: 12px; border-radius: 6px; background: rgba(10, 16, 32, 0.7); border: 1px solid var(--edge); overflow: visible; }
+#meter .bar i { position: absolute; top: 0; bottom: 0; border-radius: 6px; }
+/* Zones scaled to the meter (+-1.6 x the contact window): weak, good, great/perfect. */
+#meter .z1 { left: 18.75%; right: 18.75%; background: rgba(255, 255, 255, 0.14); }
+#meter .z2 { left: 27%; right: 27%; background: rgba(71, 224, 106, 0.35); }
+#meter .z3 { left: 43.4%; right: 43.4%; background: rgba(255, 176, 0, 0.8); }
+#meter-dot { position: absolute; top: -5px; width: 4px; height: 22px; margin-left: -2px; background: #fff; border-radius: 2px; box-shadow: 0 0 6px #000; transition: left 0.15s; }
+#meter-dot.off { background: var(--red); }
+
+/* Bottom centre (~60 px) is HopLobby's pill: the hint and the meter sit above it. */
+#hint { position: absolute; left: 50%; bottom: max(110px, calc(env(safe-area-inset-bottom) + 100px)); transform: translateX(-50%); font-weight: 900; letter-spacing: 4px;
+  font-size: 15px; background: var(--shade); border: 1px solid var(--edge); border-radius: 20px; padding: 7px 18px; animation: pulse 1.6s infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+#swing-btn { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); width: 96px; height: 96px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ff6a70, #b8222a); border: 4px solid #5a0c10; box-shadow: 0 5px 0 #5a0c10; font: 900 20px Impact, "Arial Black", sans-serif; letter-spacing: 1px; }
+#swing-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #5a0c10; }
+
+/* results */
+.r-head { font: 900 22px Impact, "Arial Black", sans-serif; letter-spacing: 3px; margin-top: 2px; }
+#r-score { font: 700 64px "Courier New", monospace; color: var(--amber); line-height: 1.05; }
+#r-best { font-weight: 700; letter-spacing: 2px; color: #47e06a; margin-bottom: 10px; }
+.r-body { display: flex; gap: 14px; align-items: center; justify-content: center; margin-bottom: 14px; }
+#r-spray { width: 230px; height: 195px; background: rgba(0, 0, 0, 0.25); border-radius: 10px; flex: none; }
+#r-stats { display: grid; grid-template-columns: 1fr; gap: 3px; text-align: left; font-size: 13px; min-width: 170px; }
+#r-stats div { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding: 2px 0; }
+#r-stats span { opacity: 0.75; letter-spacing: 1px; font-size: 11px; }
+.r-btns { display: flex; gap: 8px; }
+
+/* touch */
+.touch-only { display: none; }
+body.touch .touch-only { display: inline; }
+body.touch #swing-btn { display: block; }
+body.touch .key-only { display: none; }
+@media (max-width: 640px) {
+  #board { width: 168px; padding: 6px 8px; }
+  #score { font-size: 28px; }
+  #dots i { width: 8px; height: 8px; }
+  #dots { gap: 2px; }
+  #spray-box canvas { width: 120px; height: 102px; }
+  #mute { top: calc(max(12px, env(safe-area-inset-top)) + 122px); }
+  .call { bottom: 30%; }
+  .r-body { flex-direction: column; gap: 8px; }
+  #r-spray { width: 200px; height: 170px; }
+  #r-score { font-size: 48px; }
+  .r-btns { flex-direction: column; }
+  #title .panel { padding: 14px 16px; }
+  .lede { font-size: 13px; }
+  #meter .bar { width: 150px; }
+  #meter { bottom: 130px; }
+  #live { top: calc(max(12px, env(safe-area-inset-top)) + 162px); width: 170px; }
+  body.online .r-body { display: none; }
+}
+
+/* HopLobby: the lobby line, the live board, host-only buttons */
+.online-only, .guest-only { display: none; }
+body.online .online-only { display: block; }
+body.guest .guest-only { display: block; }
+body.guest .host-only { display: none !important; }
+body.avatar .batter-pick, body.online .batter-pick { display: none; }
+body.guest #levels .lv { cursor: default; }
+body.guest #start { background: linear-gradient(180deg, #5a6478, #3a4254); border-color: #1d2230; text-shadow: none; box-shadow: 0 4px 0 #1d2230; cursor: default; }
+#lobby-line { font-size: 11px; letter-spacing: 2px; font-weight: 700; color: var(--amber); margin: 0 0 10px; }
+#live { position: absolute; right: max(12px, env(safe-area-inset-right)); top: calc(max(12px, env(safe-area-inset-top)) + 208px); width: 236px;
+  background: var(--shade); border: 1px solid var(--edge); border-radius: 10px; padding: 4px 6px; }
+#live:empty { display: none; }
+.lb { display: grid; grid-template-columns: 16px 26px 1fr auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center; padding: 3px 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07); text-align: left; }
+.lb:last-child { border-bottom: 0; }
+.lb .rk { grid-row: 1 / span 2; font-weight: 900; color: var(--amber); font-size: 13px; }
+.lb img, .lb .pic { grid-row: 1 / span 2; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); object-fit: cover; display: block; }
+.lb b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb em { font: 700 16px "Courier New", monospace; color: var(--amber); font-style: normal; }
+.lb small { grid-column: 3 / span 2; font-size: 10px; letter-spacing: 1px; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb.you b { color: #ffe76a; }
+#r-board { max-width: 360px; margin: 0 auto 12px; background: rgba(0, 0, 0, 0.22); border-radius: 10px; padding: 4px 8px; }
+#r-board .lb b { font-size: 15px; }
+#r-board .lb em { font-size: 20px; }
+.r-wait { font-size: 12px; letter-spacing: 3px; font-weight: 700; opacity: 0.8; margin-top: 4px; }
+body.online #r-spray { width: 170px; height: 144px; }
+
+/* Home Run Derby: live distance + extra board rows */
+#dist { position: absolute; left: max(12px, env(safe-area-inset-left)); top: calc(max(12px, env(safe-area-inset-top)) + 134px); text-align: left; white-space: nowrap;
+  font: 900 clamp(34px, 6vw, 56px) "Courier New", monospace; color: #ffe27a; text-shadow: 0 0 12px rgba(255, 120, 0, 0.9), 0 3px 0 #3a1a00; }
+#dist span { font: 900 clamp(16px, 2.4vw, 24px) Impact, "Arial Black", sans-serif; margin-left: 6px; color: #ffb000; }
+#dist.final { color: #fff; animation: distpop 0.35s ease-out; }
+@keyframes distpop { 0% { transform: scale(1.5); transform-origin: left center; } 100% { transform: scale(1); transform-origin: left center; } }
+.b-row.stat { color: #cfd9e4; }
+@media (max-width: 640px) { #dist { top: calc(max(12px, env(safe-area-inset-top)) + 150px); } }
+/* HopLobby leaderboard on the results panel */
+#r-lb:empty { display: none; }
+#r-lb { margin: 6px auto 4px; max-width: 360px; background: var(--shade); border: 1px solid var(--edge); border-radius: 10px; padding: 4px 8px; font-size: 12px; }
+#r-lb .lbh { font-size: 10px; letter-spacing: 2px; font-weight: 700; color: var(--amber); padding: 2px 0 4px; }
+#r-lb .lbr { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; padding: 2px 0; text-align: left; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+#r-lb .lbr span { font-weight: 900; color: var(--amber); }
+#r-lb .lbr b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#r-lb .lbr em { font: 700 13px "Courier New", monospace; font-style: normal; }
+#r-lb .lbr.you { background: rgba(255, 176, 0, 0.14); }
