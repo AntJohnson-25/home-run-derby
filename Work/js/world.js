@@ -8,7 +8,6 @@
 // the plate (-z). A right-handed batter stands on +x (the left of the screen from behind the plate),
 // so +x is left field. Angles are degrees from straight-away centre, + = left field.
 import * as THREE from "three";
-import { assetURL } from "./assets.js";
 
 export const DEG = Math.PI / 180;
 export const FT = 3.281;                         // feet per metre
@@ -16,41 +15,16 @@ export const WALL_H = 3.0;                       // outfield wall, metres
 export const MACHINE = { z: 16.6, release: new THREE.Vector3(0, 1.12, 16.25), screenZ: 15.6 };
 export const BACKSTOP_Z = -17;
 
-// The stands' advertising. ADS_ON is the one switch: HopLobby's content policy bans sponsorships
-// and promotion of other sites, so turn it OFF (or open the page with ?ads=0) before submitting.
-// Off = plain "Home Run Derby" panels. `img` names a picture in IM (loaded by loadAdImages).
-const ADS_ON_DEFAULT = true;
-export const ADS_ON = (() => { const q = new URLSearchParams(location.search).get("ads"); return q === "0" ? false : q === "1" ? true : ADS_ON_DEFAULT; })();
-// Eight panels (two rows of four on the backstop), alternating the user's sites with the HopLobby logo.
-// Index 1 is on the machine; 0 and 3 are the blimp's flanks (so the blimp is one of each).
-const SPONSORS = [
-  { bg: "#0f2d22", fg: "#fdf8ec", acc: "#ffb000", l1: "ANTHONYJCTSG.ONLINE", l2: "FREE BROWSER ARCADE" },
-  { bg: "#0b1020", acc: "#ff6a00", img: "hoplobby", alt: "HOPLOBBY" },
-  { bg: "#ff6a00", fg: "#13213f", acc: "#13213f", l1: "CTSG-HTX.COM", l2: "DATA ENGINEERING · MARTECH" },
-  { bg: "#14213f", acc: "#ffb000", img: "hoplobby", alt: "HOPLOBBY" },
-  { bg: "#1d3263", fg: "#fdf8ec", acc: "#ffb000", l1: "CUSTOMBIZTOOLS.ONLINE", l2: "TOOLS FOR SMALL BUSINESS" },
-  { bg: "#2b1646", acc: "#ffd34d", img: "hoplobby", alt: "HOPLOBBY" },
-  { bg: "#0e3b43", fg: "#fdf8ec", acc: "#ffb000", l1: "JULIA", l2: "PORTFOLIO PLANNER" },
-  { bg: "#0b1020", acc: "#ff6a00", img: "hoplobby", alt: "HOPLOBBY" }
-];
-const PLAIN = [
+// The panels round the park: the game's own slogans (HopLobby's content policy: no ads, sponsorships or
+// promotion of other sites, and the HopLobby logo is never dressed up as a sponsor).
+const ADS = [
   { bg: "#0f2d22", fg: "#fdf8ec", acc: "#ffb000", l1: "HOME RUN DERBY", l2: "STEP UP TO THE PLATE" },
   { bg: "#13213f", fg: "#fdf8ec", acc: "#ff6a00", l1: "BEST BUCKET WINS", l2: "SAME 15 PITCHES" },
   { bg: "#1d3263", fg: "#fdf8ec", acc: "#ffb000", l1: "HOME RUN DERBY", l2: "TIME YOUR SWING" },
   { bg: "#2b1646", fg: "#fdf8ec", acc: "#ffd34d", l1: "SWING FOR THE FENCES", l2: "15 PITCHES" }
 ];
-export const ADS = ADS_ON ? SPONSORS : PLAIN;
 const IM = {};
-const imgPath = { hoplobby: "brand/hoplobby-primary-on-dark-800.png" };
-export function loadAdImages() {
-  if (!ADS_ON) return Promise.resolve();
-  return Promise.all(Object.keys(imgPath).map((k) => new Promise((res) => {
-    const i = new Image();
-    i.onload = () => { IM[k] = i; res(); };
-    i.onerror = () => res();
-    i.src = assetURL(imgPath[k]);
-  })));
-}
+export function loadAdImages() { return Promise.resolve(); }
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const smooth = (x) => x * x * (3 - 2 * x);
@@ -474,7 +448,7 @@ export function buildStadium(scene) {
     c.fillStyle = "#ff6a00"; c.fillRect(0, 0, BW, 62);
     c.fillStyle = "#13213f"; c.textBaseline = "middle"; c.textAlign = "left";
     c.font = `900 40px ${FONT}`; c.fillText("HOME RUN DERBY", 24, 33);
-    c.textAlign = "right"; c.font = `700 20px ${FONT}`; c.fillText(ADS_ON ? "LIVE ON HOPLOBBY" : "15 PITCHES · BEST BUCKET WINS", BW - 24, 33);
+    c.textAlign = "right"; c.font = `700 20px ${FONT}`; c.fillText("15 PITCHES · BEST BUCKET WINS", BW - 24, 33);
     const L = state.last;
     c.textAlign = "center";
     c.fillStyle = "#8aa0b4"; c.font = "700 24px Arial, sans-serif"; c.fillText(L ? L.kind : "LAST HIT", 580, 100);

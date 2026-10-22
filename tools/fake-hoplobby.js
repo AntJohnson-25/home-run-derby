@@ -47,7 +47,8 @@ const HL = {
   reportError(e, where) { console.warn("[fake] reportError", where, e); },
   exit() {},
   supports() { return true; },
-  session: { get: () => null, async ready() { return null; }, async end(r) { HL.endGame(r); return null; } }
+  // &roster=A,B: the round was started with only these players (the others didn't ready up)
+  session: { get: () => (q.get("roster") ? { phase: "playing", round: 1, roster: q.get("roster").split(","), you: { inGame: true, ready: true, inRoster: q.get("roster").split(",").includes(me) }, players: [] } : null), async ready() { return null; }, async end(r) { HL.endGame(r); return null; } }
 };
 
 function drop(id) {
@@ -69,4 +70,6 @@ bc.onmessage = (ev) => {
 };
 // The harness makes a player leave: everyone (this frame too) drops them.
 window.fkLeave = (id) => { bc.postMessage({ leave: id }); drop(id); };
+// A button of ours in HopLobby's Esc menu was pressed (menu.set actions).
+window.fkMenu = (id) => emit("menuAction", id);
 globalThis.HopLobby = HL;

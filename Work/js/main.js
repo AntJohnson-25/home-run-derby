@@ -15,10 +15,7 @@ import { loadAvatar } from "./avatar.js";
 import { Net, PERIOD } from "./net.js";
 import { BallFX, Flags } from "./fx.js";
 
-const Q = new URLSearchParams(location.search);
 // HopLobby: init starts now, alongside the downloads. Opened on its own it resolves as standalone.
-// ?fake=<id> (tools/harness.html) swaps in a stand-in SDK so several frames can play a lobby together.
-if (Q.has("fake")) await import("../../tools/fake-hoplobby.js");
 const HL = window.HopLobby;
 // The machine speed is a lobby option (the host picks it before launch); HopLobby runs the lobby, Ready and the rematch.
 const SPEED_OPTION = { key: "speed", label: "Machine speed", type: "choice", default: "1", choices: [
@@ -78,7 +75,7 @@ function fit() {
 addEventListener("resize", fit);
 fit();
 
-// The night ballpark (from the G: Home Run Derby). The ads in the stands are switched in world.js (ADS_ON).
+// The night ballpark (from the G: Home Run Derby).
 await W.loadAdImages();
 W.makeTextures();
 W.buildSky(scene);
@@ -91,15 +88,14 @@ const fx = new BallFX(scene, camera, W.tex.glow);
 const flags = new Flags(scene, camera);
 
 // ---- batter --------------------------------------------------------------------------------------
-// Chosen on the title screen (?char= overrides). Grip and contact are measured from the
-// batter's own body at load, so switching batter reloads the page with the new one.
+// Grip and contact are measured from the batter's own body at load.
 // The athlete only plays the clips (unseen); every player appears as their own HopLobby avatar.
 const charId = "fit";
 $("ld-msg").textContent = "Warming up the hitter...";
 progress(0.1, "Rolling out the machine");
 const [M, ctx] = await Promise.all([loadPlayer(charId), hlInit]);
 progress(0.5, "Warming up the hitter");
-const lobbyLevel = Math.max(0, Math.min(LEVELS.length - 1, ctx && ctx.options && ctx.options.speed != null ? parseInt(ctx.options.speed, 10) || 0 : parseInt(Q.get("level") || "1", 10) || 0));
+const lobbyLevel = Math.max(0, Math.min(LEVELS.length - 1, ctx && ctx.options && ctx.options.speed != null ? parseInt(ctx.options.speed, 10) || 0 : 1));
 const ch = new Character(M);
 scene.add(ch.root);
 const nb = M.nb;
@@ -109,16 +105,14 @@ const restInto = (q) => { for (let j = 0; j < nb; j++) M.restQ[j].toArray(q, j *
 function clipPose(name, time, q, h) { restInto(q); sampleClip(M, M.clips[name], time, q, h); }
 const dur = (n) => M.clips[n].dur;
 
-// In HopLobby the batter is the player's own avatar (?avatar=<glb url> stands in for testing).
-// The athlete then plays the clips unseen and the avatar copies him (avatar.js). Opened on its
-// own, or if the avatar can't be read, the athlete bats himself, in his helmet.
+// In HopLobby the batter is the player's own avatar. The athlete then plays the clips unseen and
+// the avatar copies him (avatar.js). Opened on its own, or if the avatar can't be read, the athlete
+// bats himself, in his helmet.
 const inLobby = !!(ctx && !ctx.standalone);
 let av = null;
-if (inLobby || Q.get("avatar")) {
+if (inLobby) {
   try {
-    const buf = Q.get("avatar")
-      ? await fetch(Q.get("avatar")).then((r) => { if (!r.ok) throw new Error("avatar " + r.status); return r.arrayBuffer(); })
-      : await HL.avatar(ctx.playerId, { format: "glb" });
+    const buf = await HL.avatar(ctx.playerId, { format: "glb" });
     const driver = {
       bone: (n) => ch.bone(n),
       posed(fn) { restInto(qT); hT.fromArray(M.hipsP); ch.apply(qT, hT, null, null, 0); fn(); }
@@ -200,7 +194,6 @@ function pitchRng(k) {
 }
 const online = () => Net.online() && !!Net.match;
 let pending = null;   // a hit waiting for the bat to arrive: { at, err, ... }
-let autoSwing = null; // test hook: swing at err seconds off perfect on the next pitch
 
 // ---- balls -----------------------------------------------------------------------------------------
 const ballGeo = new THREE.SphereGeometry(BALL_R, 14, 10), ballMat = W.ballMaterial();
@@ -655,7 +648,6 @@ function machineStep(dt) {
       sfx("ready");
       play("load", "hit", { t: 0, speed: LOAD_SPEED, end: LOAD_T, hold: LOAD_T, blend: 0.25 });
       P.release = time + 0.62 + 0.36 - late;
-      if (autoSwing != null) { autoSwing.at = P.release + P.T - D_HIT + autoSwing.err; }
     }
   } else if (P.state === "ready") {
     if (P.t >= 0.62) {
@@ -758,7 +750,13 @@ function sendResults(rows) {
 }
 const netHandlers = {
   board: renderBoard,
-  start(m) { bucketSeed = m.seed; startGame(m.lv); },
+  start(m) {
+    bucketSeed = m.seed;
+    startGame(m.lv);
+    // This frame was reloaded mid-bucket: carry on with the score it had.
+    const s = Net.saved(m.id);
+    if (s) { R.score = s.s; R.hr = s.hr; R.longest = s.lg; updateHud(); }
+  },
   finish(rows) { setTimeout(() => sendResults(rows), 5000); }   // everyone is done: leave the results card up a moment
 };
 // Double-tap zoom on the controls is stopped by touch-action: manipulation in the CSS. Don't
@@ -791,7 +789,6 @@ function step(dt) {
   }
   // In a lobby the first light comes on the shared clock: a slow walk-in (or a late join) is cut short.
   if (phase === "intro" && online() && Net.now() >= Net.readyAt(0) - 700) { B.done = null; ready(); }
-  if (autoSwing && autoSwing.at != null && time >= autoSwing.at) { autoSwing.at = null; swing(); }
   if (pending && time >= pending.at) contact();
 
   // --- pose
@@ -853,19 +850,22 @@ function step(dt) {
   const fov = baseFov * (phase === "title" ? 1 : zoom);
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
   camera.lookAt(look);
-  if (shake > 0) { camera.position.x += (Math.random() - 0.5) * shake * 0.12; camera.position.y += (Math.random() - 0.5) * shake * 0.12; shake = Math.max(0, shake - dt * 0.8); }
+  if (shake > 0 && !shakeOff()) { camera.position.x += (Math.random() - 0.5) * shake * 0.12; camera.position.y += (Math.random() - 0.5) * shake * 0.12; shake = Math.max(0, shake - dt * 0.8); }
 }
 
-let last = performance.now(), slow = 0, paused = false, hlPaused = false, inputOff = false;
+// Camera shake follows HopLobby's Shake setting and the player's reduced-motion wish.
+const shakeOff = () => !!HL && ((HL.settings && HL.settings.shake === false) || (HL.device && HL.device.reducedMotion));
+let last = performance.now(), slow = 0, paused = false, hlPaused = false, inputOff = false, gfxAuto = true;
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = (now - last) / 1000;
   last = now;
-  if (paused || hlPaused) return;   // test hook (BC.step drives the sim instead) / HopLobby's menu
+  if (paused || hlPaused) return;   // HopLobby's menu (paused: the test server's step hook drives the sim instead)
   if (dt > 0.05) dt = 0.05;
   step(dt);
   renderer.render(scene, camera);
-  if (phase === "play" && dt > 0.034) { slow += dt; if (slow > 3 && pixelRatio > 0.75) { pixelRatio = Math.max(0.75, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); slow = 0; } }
+  // A slow machine drops resolution only when the player left graphics on Auto.
+  if (gfxAuto && phase === "play" && dt > 0.034) { slow += dt; if (slow > 3 && pixelRatio > 0.75) { pixelRatio = Math.max(0.75, pixelRatio - 0.25); renderer.setPixelRatio(pixelRatio); slow = 0; } }
   else slow = Math.max(0, slow - dt * 0.5);
 }
 
@@ -885,6 +885,7 @@ lobbyUi();
 function applyGraphics(g) {
   if (!g) return;
   const shadows = g.shadows !== "off";
+  gfxAuto = !!g.auto;
   pixelRatio = Math.min(devicePixelRatio || 1, g.pixelRatio, isTouch ? 1.6 : 2);
   renderer.setPixelRatio(pixelRatio);
   if (renderer.shadowMap.enabled !== shadows) { renderer.shadowMap.enabled = shadows; scene.traverse((o) => { if (o.material) [].concat(o.material).forEach((m) => { m.needsUpdate = true; }); }); }
@@ -904,32 +905,23 @@ if (HL && HL.menu) {
       { keys: ["Early / late"], action: "Early pulls the ball, late pushes it the other way" }
     ] }],
     controlsNote: "Right on the money clears the wall. Fifteen pitches a bucket; the best bucket wins.",
-    shared: ["graphics", "audio"]
+    shared: ["graphics", "audio", "shake"],
+    actions: [{ id: "credits", label: "Credits" }]
   }).catch((e) => console.warn("menu", e));
+  HL.on("menuAction", (id) => { if (id === "credits") $("credits").classList.remove("hidden"); });
 }
+$("credits-close").addEventListener("click", () => $("credits").classList.add("hidden"));
 if (HL && HL.graphics) { applyGraphics(HL.graphics); HL.on("graphics", applyGraphics); }
 if (HL) { applyAudio(); HL.on("settings", applyAudio); }
 if (HL && HL.on) {
   HL.on("pause", () => { inputOff = true; if (!Net.online()) hlPaused = true; });
   HL.on("resume", () => { inputOff = false; hlPaused = false; });
 }
-if (Q.get("play")) startGame(+(Q.get("level") || 0));
-else if (!Net.online() && !Q.get("wait")) startGame(level);   // alone: straight in. In a lobby the host's start message does it.
+if (Net.out) {
+  // Not in this round (HopLobby started it without us): wait for the next one.
+  $("ld-msg").textContent = "This round has started. You're in the next one.";
+  $("loading").classList.remove("hidden");
+} else if (!Net.online()) startGame(level);   // alone: straight in. In a lobby the host's start message does it.
 requestAnimationFrame(frame);
 progress(1);
 if (HL) HL.ready();
-
-// Test hooks.
-window.BC = {
-  start: (lv) => startGame(lv || 0),
-  begin: () => startGame(level), net: Net, avatar: () => !!av,
-  swing,
-  auto: (err) => { autoSwing = err == null ? null : { err, at: null }; },
-  state: () => ({ phase, mode: B.mode, clip: B.clip, t: +B.t.toFixed(2), pitch: P.state, kind: P.kind, mph: P.mph && +P.mph.toFixed(1), judged: P.judged, n: R.n, score: R.score, last: R.hits.length ? R.hits[R.hits.length - 1] : null, ball: live.mode, bp: live.mesh.position.toArray().map((x) => +x.toFixed(2)) }),
-  now: () => time,
-  pause: (on) => { paused = on !== false; },
-  step: (n, dt, noRender) => { for (let i = 0; i < n; i++) step(dt || 1 / 60); if (!noRender) renderer.render(scene, camera); },
-  info: { HIT, MISS, D_HIT, ROOT, CONTACT, START },
-  cam: (p, l) => { PLAY_CAM.pos.fromArray(p); if (l) PLAY_CAM.look.fromArray(l); camera.position.copy(PLAY_CAM.pos); look.copy(PLAY_CAM.look); },
-  R, P
-};

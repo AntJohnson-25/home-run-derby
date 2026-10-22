@@ -22,7 +22,7 @@ const ids = ["A", "B", "C", "D"].slice(0, n);
 const opts = JSON.stringify({ speed: q.get("speed") || "1" });
 for (const id of ids) {
   const f = document.createElement("iframe");
-  f.src = "/Work/index.html?fake=" + id + "&lobby=" + ids.join(",") + "&opts=" + encodeURIComponent(opts) + "&g=" + (q.get("g") || "low");
+  f.src = "/Work/index.html?fake=" + id + "&lobby=" + ids.join(",") + "&opts=" + encodeURIComponent(opts) + "&g=" + (q.get("g") || "low") + (q.get("roster") ? "&roster=" + q.get("roster") : "");
   f.id = "f" + id;
   document.getElementById("frames").appendChild(f);
 }
@@ -32,6 +32,8 @@ if (q.has("auto")) setInterval(() => document.querySelectorAll("iframe").forEach
 if (q.has("drive")) setInterval(() => {
   document.querySelectorAll("iframe").forEach((f) => { const w = f.contentWindow; if (w && w.BC) { try { w.BC.pause(true); w.BC.step(+(q.get("steps") || 3), 1 / 20, true); } catch (e) { console.error(f.id + " " + (e.stack || e)); } } });
 }, 50);
+// Reload one player's frame mid-round (as HopLobby would after a refresh: &late = joinedLate).
+window.fkReload = (id) => { const f = document.getElementById("f" + id); f.src = f.src.replace(/&late\b/, "") + "&late"; };
 window.fkLeave = (id) => { const f = document.getElementById("f" + id); if (f) f.remove(); const any = document.querySelector("iframe"); if (any) any.contentWindow.fkLeave(id); };
 </script>
 </body>

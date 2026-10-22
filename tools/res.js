@@ -1,0 +1,1 @@
+(() => [...new Set(frame(0).performance.getEntriesByType("resource").map((e) => e.name + " " + e.responseStatus))].join("\n"))()
