@@ -22,8 +22,18 @@ const TIP = [-1, CHEST, NECK, HEAD, -1, 6, 7, 8, -1, 10, 11, 12, -1, 14, 15, -1,
 const PARENT_SWING = { 4: 3, 8: 7, 12: 11, 15: 14, 18: 17 };
 export const AV_R_HAND = 8, AV_L_HAND = 12;
 
-// ---- the rig, by shape -------------------------------------------------------------------------
+// ---- the rig: by HopLobby's bone names, else by shape -------------------------------------------
+// Real avatars carry fingers and toes too (51 bones); the names of the 19 we use are documented.
+const NAMES = ["hips", "spine", "chest", "neck", "head", "shoulderR", "upperArmR", "forearmR", "handR",
+  "shoulderL", "upperArmL", "forearmL", "handL", "thighR", "shinR", "footR", "thighL", "shinL", "footL"];
+function readRigByName(bones) {
+  const byName = new Map(bones.map((b) => [b.name, b]));
+  const map = NAMES.map((n) => byName.get(n) || null);
+  return map.every(Boolean) ? map : null;
+}
 function readRig(bones) {
+  const named = readRigByName(bones);
+  if (named) return named;
   if (bones.length < 10) return null;
   const isBone = (o) => o && o.isBone;
   const kids = (b) => b.children.filter(isBone);
@@ -39,7 +49,8 @@ function readRig(bones) {
   for (let b = head; b; b = isBone(b.parent) ? b.parent : null) { path.push(b); if (b === hips) break; }
   if (path[path.length - 1] !== hips) return null;
   const onPath = new Set(path);
-  const chain = (b) => { const c = [b]; let k = kids(b); while (k.length) { k.sort((x, y) => count(y) - count(x)); c.push(k[0]); k = kids(k[0]); } return c; };
+  // A limb runs down to where it branches: a hand with fingers ends the arm.
+  const chain = (b) => { const c = [b]; let k = kids(b); while (k.length === 1) { c.push(k[0]); k = kids(k[0]); } return c; };
   const arms = [], legs = [];
   path.forEach((b) => kids(b).forEach((k) => { if (!onPath.has(k)) (b === hips ? legs : arms).push(chain(k)); }));
   if (arms.length < 2 || legs.length < 2) return null;
