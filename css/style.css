@@ -27,6 +27,10 @@ button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulat
 #title, #results { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 20; padding: 16px;
   background: linear-gradient(180deg, rgba(10, 16, 32, 0.05), rgba(10, 16, 32, 0.55)); }
 #title { align-items: flex-end; justify-content: flex-start; }
+#credits { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 30; padding: 16px; background: rgba(10, 16, 32, 0.55); }
+#credits .panel { max-width: 420px; }
+#credits p { margin: 12px 0 16px; line-height: 1.6; font-size: 14px; }
+#credits button { font: 900 14px Impact, "Arial Black", sans-serif; letter-spacing: 2px; padding: 8px 22px; border-radius: 10px; border: 2px solid #07101f; background: var(--amber); color: #13213f; cursor: pointer; }
 .panel { background: linear-gradient(180deg, rgba(29, 50, 99, 0.95), rgba(19, 33, 63, 0.96)); border: 3px solid #07101f; border-radius: 14px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 2px var(--edge); padding: 20px 24px; max-width: 520px; width: 100%; text-align: center; }
 #title .panel { max-width: 440px; text-align: left; }
